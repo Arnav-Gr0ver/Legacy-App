@@ -1,0 +1,318 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --primary-color: #2A4D69;
+  --primary-hover: #1E3A57;
+  --background-color: #F5F7FA;
+  --text-color: #1A1A1A;
+  --secondary-text: #4D4D4D;
+  --border-color: #D9D9D9;
+  --grey-100: #F0F0F0;
+  --grey-200: #E0E0E0;
+  --grey-300: #CCCCCC;
+  --grey-400: #B3B3B3;
+  --grey-500: #999999;
+  --grey-700: #666666;
+  --purple-light: #E6E6FA;
+  --white: #FFFFFF;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  line-height: 1.5;
+  color: var(--text-color);
+  background-color: var(--background-color);
+}
+
+.legacysearch-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.legacysearch-header {
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.legacysearch-logo {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 10px;
+}
+
+.legacysearch-tagline {
+  font-size: 16px;
+  color: var(--secondary-text);
+  margin-bottom: 30px;
+}
+
+.legacysearch-search-container {
+  position: relative;
+  margin-bottom: 30px;
+}
+
+.legacysearch-search-form {
+  position: relative;
+}
+
+.legacysearch-search-input-container {
+  display: flex;
+  align-items: center;
+  background: var(--white);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  padding: 8px 16px;
+  transition: all 0.2s ease;
+}
+
+.legacysearch-search-input-container:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(89, 73, 208, 0.1);
+}
+
+.legacysearch-search-icon {
+  color: var(--grey-500);
+  margin-right: 10px;
+}
+
+.legacysearch-search-input {
+  width: 100%;
+  padding: 12px 0;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  color: var(--text-color);
+  background: transparent;
+}
+
+.legacysearch-search-button {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.legacysearch-search-button:hover {
+  background-color: var(--primary-hover);
+}
+
+.legacysearch-recent-searches {
+  margin-top: 24px;
+  background: var(--white);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.legacysearch-recent-searches h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--grey-700);
+  margin-bottom: 12px;
+}
+
+.legacysearch-search-list {
+  list-style: none;
+}
+
+.legacysearch-search-item {
+  margin-bottom: 8px;
+}
+
+.legacysearch-search-item-button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  background: var(--grey-100);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text-color);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.legacysearch-search-item-button:hover {
+  background-color: var(--grey-200);
+}
+
+.legacysearch-search-item-icon {
+  margin-right: 10px;
+  color: var(--grey-500);
+}
+
+.legacysearch-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.legacysearch-spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid rgba(89, 73, 208, 0.1);
+  border-top-color: var(--primary-color);
+  animation: spinner 0.8s linear infinite;
+}
+
+.legacysearch-loader-text {
+  color: var(--secondary-text);
+  font-size: 14px;
+  margin-top: 12px;
+}
+
+.legacysearch-results {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 24px;
+  box-shadow: var(--shadow);
+}
+
+.legacysearch-results-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.legacysearch-results-icon {
+  background-color: var(--purple-light);
+  color: var(--primary-color);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+}
+
+.legacysearch-results-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.legacysearch-results-content {
+  line-height: 1.7;
+  color: var(--text-color);
+  font-size: 16px;
+}
+
+.legacysearch-context-cards {
+  display: grid;
+  grid-gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  margin-bottom: 20px;
+}
+
+.legacysearch-context-card {
+  background-color: var(--white);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.legacysearch-context-card:hover {
+  transform: scale(1.05);
+}
+
+.legacysearch-context-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.legacysearch-context-header h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 0;
+}
+
+.legacysearch-context-info-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--primary-color);
+  transition: color 0.2s ease;
+}
+
+.legacysearch-context-info-button:hover {
+  color: var(--primary-hover);
+}
+
+.legacysearch-context-text {
+  font-size: 14px;
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.legacysearch-selected-context {
+  background-color: var(--white);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+  margin-top: 20px;
+}
+
+.legacysearch-context-close-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--grey-500);
+  transition: color 0.2s ease;
+}
+
+.legacysearch-context-close-button:hover {
+  color: var(--grey-700);
+}
+
+.legacysearch-response {
+  background-color: var(--white);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+  margin-top: 20px;
+}
+
+@keyframes spinner {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 600px) {
+  .legacysearch-container {
+    padding: 20px 12px;
+  }
+  
+  .legacysearch-search-button {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+}
