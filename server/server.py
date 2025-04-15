@@ -10,7 +10,11 @@ import pandas as pd
 import os
 import re
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    static_folder='../client/build/static',
+    template_folder='../client/build'
+)
 CORS(app)
 
 # Hugging Face Credentials
