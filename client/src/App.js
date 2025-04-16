@@ -1,20 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 function App() {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState(null);
+  const [response, setResponse] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [recentSearches, setRecentSearches] = useState([]);
-  const [selectedContext, setSelectedContext] = useState(null);
-
+  const [queryType, setQueryType] = useState(null);
+  const [searchHistory, setSearchHistory] = useState([]);
+  const chatContainerRef = useRef(null);
+  
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
     
     setLoading(true);
+    setResponse(null);
+    
     try {
-      const response = await fetch('http://localhost:5000/api/search', {
+      const res = await fetch('/api/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -22,159 +25,192 @@ function App() {
         body: JSON.stringify({ query }),
       });
       
-      const data = await response.json();
-      setResults(data);
+      const data = await res.json();
+      setResponse(data);
+      setQueryType(data.query_type);
       
-      // Add to recent searches
-      if (!recentSearches.includes(query)) {
-        const updatedSearches = [query, ...recentSearches.slice(0, 4)];
-        setRecentSearches(updatedSearches);
-        localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
-      }
+      // Add to search history
+      setSearchHistory(prev => [
+        { query, response: data, timestamp: new Date().toLocaleTimeString() },
+        ...prev.slice(0, 9)
+      ]);
     } catch (error) {
-      console.error('Error fetching results:', error);
+      console.error('Error fetching data:', error);
+      setResponse({
+        query_type: 'ERROR',
+        content: 'An error occurred while processing your request. Please try again.'
+      });
     } finally {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
-    const savedSearches = localStorage.getItem('recentSearches');
-    if (savedSearches) {
-      setRecentSearches(JSON.parse(savedSearches));
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, []);
-
-  // SVG Icons
-  const SearchIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8"></circle>
-      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-    </svg>
-  );
-
-  const DocumentIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-      <polyline points="14 2 14 8 20 8"></polyline>
-      <line x1="16" y1="13" x2="8" y2="13"></line>
-      <line x1="16" y1="17" x2="8" y2="17"></line>
-      <polyline points="10 9 9 9 8 9"></polyline>
-    </svg>
-  );
-
-  const InfoIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"></circle>
-      <line x1="12" y1="16" x2="12" y2="12"></line>
-      <line x1="12" y1="8" x2="12.01" y2="8"></line>
-    </svg>
-  );
+  }, [response]);
+  
+  // Format text with markdown-like syntax (* for italics, ** for bold)
+  const formatText = (text) => {
+    if (!text) return '';
+    
+    // Replace **text** with <strong>text</strong>
+    let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Replace *text* with <em>text</em>
+    formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    return formattedText;
+  };
+  
+  const renderResponse = () => {
+    if (!response) return null;
+    
+    const typeLabels = {
+      'GENERAL': 'Clinical Guidance',
+      'CASE': 'Case Analysis',
+      'PREDICTION': 'Clinical Prediction',
+      'ERROR': 'Error'
+    };
+    
+    return (
+      <div className="response-container">
+        <div className="response-header">
+          <span className={`response-type ${response.query_type.toLowerCase()}`}>
+            {typeLabels[response.query_type] || response.query_type}
+          </span>
+        </div>
+        
+        {response.query_type === 'CASE' && response.similar_cases && (
+          <div className="case-studies">
+            <h3>Similar Case Studies</h3>
+            {response.similar_cases.map((caseStudy, idx) => (
+              <div key={idx} className="case-card">
+                <div className="case-context">
+                  <strong>Patient Context:</strong>
+                  <p dangerouslySetInnerHTML={{ __html: formatText(caseStudy.context) }}></p>
+                </div>
+                <div className="case-response">
+                  <strong>Clinical Approach:</strong>
+                  <p dangerouslySetInnerHTML={{ __html: formatText(caseStudy.response) }}></p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        <div className="response-content">
+          {response.query_type === 'PREDICTION' ? (
+            <div dangerouslySetInnerHTML={{ __html: response.content }} />
+          ) : (
+            <div dangerouslySetInnerHTML={{ __html: formatText(response.content) }}></div>
+          )}
+        </div>
+        
+        {response.sources && (
+          <div className="sources">
+            <h4>Sources</h4>
+            <ul>
+              {response.sources.map((source, idx) => (
+                <li key={idx}>{source}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <div className="legacysearch-container">
-      <div className="legacysearch-header">
-        <div className="legacysearch-logo">LegacySearch</div>
-        <div className="legacysearch-tagline">Discover insights from archived conversations</div>
-      </div>
-      
-      <div className="legacysearch-search-container">
-        <form onSubmit={handleSearch} className="legacysearch-search-form">
-          <div className="legacysearch-search-input-container">
-            <span className="legacysearch-search-icon">
-              <SearchIcon />
-            </span>
+    <div className="app">
+      <header className="app-header">
+        <h1>LegacySearch</h1>
+        <p className="app-subtitle">Mental Health Guidance for Clinicians</p>
+        <div className="search-container">
+          <form onSubmit={handleSearch}>
             <input
               type="text"
-              placeholder="Search for mental health topics, symptoms, or conditions (e.g., 'anxiety symptoms', 'coping strategies for depression')"
-              className="legacysearch-search-input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              placeholder="Ask about patient cases, treatments, or clinical predictions..."
+              className="search-input"
             />
-          </div>
-          <button type="submit" className="legacysearch-search-button">
-            Search
-          </button>
-        </form>
-      </div>
-      
-      {!results && !loading && recentSearches.length > 0 && (
-        <div className="legacysearch-recent-searches">
-          <h3>Recent searches</h3>
-          <ul className="legacysearch-search-list">
-            {recentSearches.map((search, index) => (
-              <li key={index} className="legacysearch-search-item">
-                <button
-                  onClick={() => {
-                    setQuery(search);
-                    handleSearch({ preventDefault: () => {} });
-                  }}
-                  className="legacysearch-search-item-button"
-                >
-                  <span className="legacysearch-search-item-icon"><SearchIcon /></span>
-                  <span>{search}</span>
+            <button type="submit" className="search-button">
+              {loading ? "Analyzing..." : "Search"}
+            </button>
+          </form>
+        </div>
+      </header>
+
+      <main className="app-main">
+        <div className="chat-container" ref={chatContainerRef}>
+          {!response && !loading && (
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
+              <h2>How can I support your clinical work today?</h2>
+              <p>Ask about specific patient cases, evidence-based treatments, or make predictions based on clinical data.</p>
+              <div className="sample-queries">
+                <h3>Try these examples:</h3>
+                <button onClick={() => setQuery("What are evidence-based approaches for treating treatment-resistant depression in adults?")}>
+                  Evidence-based approaches for treatment-resistant depression
                 </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      
-      {loading && (
-        <div className="legacysearch-loader">
-          <div className="legacysearch-spinner"></div>
-          <div className="legacysearch-loader-text">Searching archives...</div>
-        </div>
-      )}
-      
-      {results && !loading && (
-        <div className="legacysearch-results">
-          <div className="legacysearch-results-header">
-            <div className="legacysearch-results-icon">
-              <DocumentIcon />
+                <button onClick={() => setQuery("Patient case: 28-year-old with panic disorder and agoraphobia, failed first-line SSRI treatment")}>
+                  Patient with panic disorder not responding to first-line treatment
+                </button>
+                <button onClick={() => setQuery("Clinical prediction for 42-year-old female with recurring headaches, fatigue, and difficulty concentrating")}>
+                  Clinical prediction for recurring headaches and cognitive symptoms
+                </button>
+              </div>
             </div>
-            <h2 className="legacysearch-results-title">{results.title}</h2>
-          </div>
-          
-          <div className="legacysearch-results-content">
-            {results.contexts && results.contexts.length > 0 && (
-              <div className="legacysearch-context-cards">
-                {results.contexts.map((context, index) => (
-                  <div key={index} className="legacysearch-context-card">
-                    <div className="legacysearch-context-header">
-                      <h4>Context {index + 1}</h4>
-                      <button className="legacysearch-context-info-button" onClick={() => setSelectedContext(context)}>
-                        <InfoIcon />
-                        View Full Context
-                      </button>
-                    </div>
-                    <p className="legacysearch-context-text">{context.substring(0, 150)}... <span className="legacysearch-context-link">Show more</span></p>
-                    <div className="legacysearch-context-metadata">
-                      <span>Source: {context.source}</span>
-                      <span>Date: {context.date}</span>
-                    </div>
-                  </div>
-                ))}
+          )}
+
+          {loading && (
+            <div className="loading">
+              <div className="loading-spinner"></div>
+              <p>Analyzing clinical query...</p>
+            </div>
+          )}
+
+          {query && response && (
+            <div className="chat-session">
+              <div className="query-bubble">
+                <p>{query}</p>
               </div>
-            )}
-            {selectedContext && (
-              <div className="legacysearch-selected-context">
-                <div className="legacysearch-context-header">
-                  <h4>Selected Context</h4>
-                  <button className="legacysearch-context-close-button" onClick={() => setSelectedContext(null)}>
-                    &times;
-                  </button>
-                </div>
-                <p className="legacysearch-context-text">{selectedContext}</p>
-              </div>
-            )}
-            <div 
-              className="legacysearch-response" 
-              dangerouslySetInnerHTML={{ __html: results.response }}
-            />
-          </div>
+              {renderResponse()}
+            </div>
+          )}
         </div>
-      )}
+
+        {searchHistory.length > 0 && (
+          <aside className="search-history">
+            <h3>Recent Queries</h3>
+            <ul>
+              {searchHistory.map((item, idx) => (
+                <li key={idx} onClick={() => {
+                  setQuery(item.query);
+                  setResponse(item.response);
+                  setQueryType(item.response.query_type);
+                }}>
+                  <span className="history-time">{item.timestamp}</span>
+                  <span className="history-query">{item.query.substring(0, 30)}{item.query.length > 30 ? '...' : ''}</span>
+                  <span className={`history-type ${item.response.query_type.toLowerCase()}`}>
+                    {item.response.query_type === 'GENERAL' ? 'Clinical' : 
+                     item.response.query_type === 'CASE' ? 'Case' : 
+                     item.response.query_type === 'PREDICTION' ? 'Prediction' : 'Error'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </aside>
+        )}
+      </main>
     </div>
   );
 }
