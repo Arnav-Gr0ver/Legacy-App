@@ -35,38 +35,50 @@ except Exception as e:
     tfidf_vectorizer = None
     tfidf_matrix = None
 
-# Function to classify query type
 def classify_query(query):
-    # Simple heuristic classification:
-    query_lower = query.lower()
-
-    # Check for prediction indicators
-    prediction_keywords = ['predict', 'prognos', 'forecast', 'likelihood', 'probability', 'chance', 'risk']
-    prediction_indicators = [
-        re.search(r'(\d+)\s*(?:year|yr).*(?:male|female|man|woman|person)', query_lower) is not None,
-        any(keyword in query_lower for keyword in prediction_keywords),
-        'blood pressure' in query_lower,
-        'fever' in query_lower and ('cough' in query_lower or 'fatigue' in query_lower),
-        'symptoms' in query_lower and len(re.findall(r'(?:fever|cough|fatigue|breathing|tired|male|female|cholesterol)', query_lower)) >= 2
-    ]
-
-    # Check for case indicators
-    case_keywords = ['case', 'patient', 'client', 'similar', 'example', 'precedent']
-    case_indicators = [
-        any(keyword in query_lower for keyword in case_keywords),
-        re.search(r'(?:patient|person|individual|man|woman) with', query_lower) is not None,
-        'history of' in query_lower,
-        re.search(r'(\d+)\s*(?:year|yr).*old', query_lower) is not None and 'predict' not in query_lower,
-        'diagnosed with' in query_lower
-    ]
-
-    # Classify based on indicators
-    if any(prediction_indicators):
-        return 'PREDICTION'
-    elif any(case_indicators):
-        return 'CASE'
-    else:
-        return 'GENERAL'
+    """
+    Classifies medical queries into 'PREDICTION', 'CASE', or 'GENERAL' categories
+    using OpenAI instead of regex patterns.
+    """
+    from openai import OpenAI
+    
+    client = OpenAI()  # This assumes API key is set in environment variable
+    
+    # Create a prompt that explains the classification task
+    prompt = f"""
+    Classify the following medical query into exactly one of these categories:
+    - PREDICTION: Queries asking for predictions about medical outcomes, risks, or probabilities
+    - CASE: Queries describing specific patient cases, examples, or medical histories
+    - GENERAL: General medical questions that don't fit the above categories
+    
+    Examples:
+    "What is the likelihood of recovery for a 45-year-old male with pneumonia?" → PREDICTION
+    "Patient with history of diabetes and hypertension presenting with chest pain" → CASE
+    "What medications are commonly prescribed for hypertension?" → GENERAL
+    
+    Query to classify: {query}
+    
+    Classification (return only PREDICTION, CASE, or GENERAL):
+    """
+    
+    # Call the OpenAI API
+    response = client.chat.completions.create(
+        model="gpt-4.1-nano-2025-04-14",  # You can use other models as needed
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,  # Use low temperature for consistent results
+        max_tokens=10  # We only need a short response
+    )
+    
+    # Extract and return the classification
+    classification = response.choices[0].message.content.strip()
+    
+    # Ensure the response is one of our expected categories
+    valid_categories = ["PREDICTION", "CASE", "GENERAL"]
+    if classification not in valid_categories:
+        # Fall back to a default if the API returns an unexpected value
+        return "GENERAL"
+    
+    return classification
 
 # Function to generate predictive response
 def generate_predictive_response(query):
